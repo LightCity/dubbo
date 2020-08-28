@@ -208,7 +208,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
         exported();
     }
-
+    /** 导出完毕，发消息 */
     public void exported() {
         // dispatch a ServiceConfigExportedEvent since 2.7.4
         dispatch(new ServiceConfigExportedEvent(this));

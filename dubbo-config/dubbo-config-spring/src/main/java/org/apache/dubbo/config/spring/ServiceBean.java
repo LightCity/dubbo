@@ -102,7 +102,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
     }
 
     /**
-     * @since 2.6.5
+     * @since 2.6.5 导出完毕，发消息
      */
     @Override
     public void exported() {
