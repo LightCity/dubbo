@@ -35,8 +35,8 @@ public class ServiceDescriptor {
     private final String serviceName;
     private final Class<?> serviceInterfaceClass;
     // to accelerate search
-    private final Map<String, List<MethodDescriptor>> methods = new HashMap<>();
-    private final Map<String, Map<String, MethodDescriptor>> descToMethods = new HashMap<>();
+    private final Map<String/*methodName*/, List<MethodDescriptor>> methods = new HashMap<>(); // TODO 初始化时，每个value只有1个item，什么时候会变成多个item？
+    private final Map<String/*methodName*/, Map<String/*paramDesc，只是简单地append每个参数的class的name*/, MethodDescriptor>> descToMethods = new HashMap<>();
 
     public ServiceDescriptor(Class<?> interfaceClass) {
         this.serviceInterfaceClass = interfaceClass;
@@ -49,17 +49,35 @@ public class ServiceDescriptor {
         for (Method method : methodsToExport) {
             method.setAccessible(true);
 
-            List<MethodDescriptor> methodModels = methods.computeIfAbsent(method.getName(), (k) -> new ArrayList<>(1));
-            methodModels.add(new MethodDescriptor(method));
+//            List<MethodDescriptor> methodModels = methods.computeIfAbsent(method.getName(), (k) -> new ArrayList<>(1));
+//            methodModels.add(new MethodDescriptor(method));
+            // 上面这2行代码 == 下面这个调用
+            methods.computeIfAbsent(method.getName(), methodName -> {
+                List<MethodDescriptor> methodDescriptorList = new ArrayList<>(1);
+                methodDescriptorList.add(new MethodDescriptor(method));
+                return methodDescriptorList;
+            });
         }
 
-        methods.forEach((methodName, methodList) -> {
-            Map<String, MethodDescriptor> descMap = descToMethods.computeIfAbsent(methodName, k -> new HashMap<>());
-            methodList.forEach(methodModel -> descMap.put(methodModel.getParamDesc(), methodModel));
+//        methods.forEach((methodName, methodList) -> {
+//            Map<String, MethodDescriptor> descMap = descToMethods.computeIfAbsent(methodName, k -> new HashMap<>());
+//            methodList.forEach(methodModel -> descMap.put(methodModel.getParamDesc(), methodModel));
+//
+////            Map<Class<?>[], MethodModel> typesMap = typeToMethods.computeIfAbsent(methodName, k -> new HashMap<>());
+////            methodList.forEach(methodModel -> typesMap.put(methodModel.getParameterClasses(), methodModel));
+//        });
+        // 上面这2行代码 == 下面这个调用
+        final Set<Map.Entry<String, List<MethodDescriptor>>> entrySet = methods.entrySet();
+        for (Map.Entry<String, List<MethodDescriptor>> entry : entrySet) {
+            final String methodName = entry.getKey();
+            final List<MethodDescriptor> methodDescriptorList = entry.getValue();
 
-//            Map<Class<?>[], MethodModel> typesMap = typeToMethods.computeIfAbsent(methodName, k -> new HashMap<>());
-//            methodList.forEach(methodModel -> typesMap.put(methodModel.getParameterClasses(), methodModel));
-        });
+            Map<String/*paramDesc*/, MethodDescriptor> paramDesc_2_MethodDescriptor = new HashMap<>();
+            for (MethodDescriptor methodDescriptor : methodDescriptorList) {
+                paramDesc_2_MethodDescriptor.put(methodDescriptor.getParamDesc(), methodDescriptor);
+            }
+            descToMethods.put(methodName, paramDesc_2_MethodDescriptor);
+        }
     }
 
     public String getServiceName() {
