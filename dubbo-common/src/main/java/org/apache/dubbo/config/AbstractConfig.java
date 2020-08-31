@@ -543,7 +543,9 @@ public abstract class AbstractConfig implements Serializable {
         return true;
     }
 
-
+    /**
+     * 如果类型相同，并且所有getter返回值也相同，则认为是相同的config对象
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj == null || !(obj.getClass().getName().equals(this.getClass().getName()))) {
