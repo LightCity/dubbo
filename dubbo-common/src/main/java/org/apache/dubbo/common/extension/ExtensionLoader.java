@@ -123,7 +123,9 @@ public class ExtensionLoader<T> {
      * @since 2.7.7
      */
     private static LoadingStrategy[] loadLoadingStrategies() {
-        return stream(load(LoadingStrategy.class).spliterator(), false)
+        // 使用jdk自带的service loader，加载指定 interface 的 implement 类。
+        // 被加载的类的配置文件在 /META-INFO/services/ 目录下，并且该配置文件名称就是 interface 的全路径名。这里的文件名是 org.apache.dubbo.common.extension.LoadingStrategy
+        return stream(java.util.ServiceLoader.load(LoadingStrategy.class).spliterator(), false)
                 .sorted()
                 .toArray(LoadingStrategy[]::new);
     }
