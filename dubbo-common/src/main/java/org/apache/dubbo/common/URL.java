@@ -282,7 +282,7 @@ class URL implements Serializable {
                     throw new IllegalStateException("url missing protocol: \"" + url + "\"");
                 }
                 protocol = url.substring(0, i);
-                url = url.substring(i + 1);
+                url = url.substring(i + 1); // 得到的值是 /path/to/file.txt ，此时下面解析url得到的值是空字符串
             }
         }
 
