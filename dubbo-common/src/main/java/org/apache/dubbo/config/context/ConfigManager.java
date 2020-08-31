@@ -473,8 +473,8 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
         }
     }
 
-    private static Map newMap() {
-        return new HashMap<>();
+    private static <K, V> Map<K, V> newMap() {
+        return new HashMap<K, V>();
     }
 
     static <C extends AbstractConfig> void addIfAbsent(C config, Map<String, C> configsMap, boolean unique)
