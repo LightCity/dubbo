@@ -69,7 +69,7 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    final Map<String, Map<String, AbstractConfig>> configsCache = newMap();
+    final Map<String/* config的tag，例如ServiceConfig的tag就是service */, Map<String/* config的唯一key */, AbstractConfig/* 具体的config */>> configsCache = newMap();
 
     public ConfigManager() {
     }
