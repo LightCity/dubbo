@@ -443,6 +443,10 @@ public class RegistryConfig extends AbstractConfig {
         }
     }
 
+    /**
+     * 在 {@link org.apache.dubbo.config.context.ConfigManager#isDefaultConfig(AbstractConfig)} 中，
+     * isDefault的默认值是true。也就是说，isDefault == null就意味着这是一个默认config
+     */
     public Boolean isDefault() {
         return isDefault;
     }
