@@ -90,8 +90,14 @@ public class ExtensionLoader<T> {
 
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<>(64);
 
+    /**
+     * {@link #ExtensionLoader(Class)}
+     */
     private final Class<?> type;
 
+    /**
+     * {@link #ExtensionLoader(Class)}
+     */
     private final ExtensionFactory objectFactory;
 
     private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<>();
@@ -143,6 +149,16 @@ public class ExtensionLoader<T> {
         return asList(strategies);
     }
 
+    /**
+     * <p>
+     *     除了{@link ExtensionFactory}，其他扩展点的{@link ExtensionLoader}都有一个{@link ExtensionLoader#objectFactory}成员。
+     * </p>
+     * <p>
+     *     似乎，这个构造器生成的 ExtensionLoader 实例的 objectFactory 都是{@link org.apache.dubbo.common.extension.factory.AdaptiveExtensionFactory}的实例，
+     *     并且该 ExtensionFactory 实例被所有 ExtensionLoader 实例共享。
+     * </p>
+     * @param type 扩展点的class
+     */
     private ExtensionLoader(Class<?> type) {
         this.type = type;
         objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
