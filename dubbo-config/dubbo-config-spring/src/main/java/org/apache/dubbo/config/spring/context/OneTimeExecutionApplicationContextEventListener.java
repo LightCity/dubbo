@@ -31,10 +31,11 @@ import java.util.Objects;
  *
  * @since 2.7.5
  */
-abstract class OneTimeExecutionApplicationContextEventListener implements ApplicationListener, ApplicationContextAware {
+abstract class OneTimeExecutionApplicationContextEventListener implements ApplicationListener<ApplicationEvent>, ApplicationContextAware {
 
     private ApplicationContext applicationContext;
 
+    @Override
     public final void onApplicationEvent(ApplicationEvent event) {
         if (isOriginalEventSource(event) && event instanceof ApplicationContextEvent) {
             onApplicationContextEvent((ApplicationContextEvent) event);
