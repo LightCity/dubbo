@@ -96,6 +96,7 @@ public class ExtensionLoader<T> {
     private final Class<?> type;
 
     /**
+     * 这个实例的作用是：当生成扩展点（除了ExtensionFactory）时，用这个实例来获取其他扩展点实例？
      * {@link #ExtensionLoader(Class)}
      */
     private final ExtensionFactory objectFactory;
@@ -691,7 +692,7 @@ public class ExtensionLoader<T> {
 
     private T injectExtension(T instance) {
 
-        if (objectFactory == null) {
+        if (objectFactory == null) { // 从构造器看，当模板参数T是ExtensionFactory时，objectFactory会是null
             return instance;
         }
 
@@ -793,8 +794,15 @@ public class ExtensionLoader<T> {
         Map<String, Class<?>> extensionClasses = new HashMap<>();
 
         for (LoadingStrategy strategy : strategies) {
-            loadDirectory(extensionClasses, strategy.directory(), type.getName(), strategy.preferExtensionClassLoader(), strategy.overridden(), strategy.excludedPackages());
-            loadDirectory(extensionClasses, strategy.directory(), type.getName().replace("org.apache", "com.alibaba"), strategy.preferExtensionClassLoader(), strategy.overridden(), strategy.excludedPackages());
+            final String directory = strategy.directory();
+            final String nameOfApache = type.getName();
+            final String nameOfAlibaba = nameOfApache.replace("org.apache", "com.alibaba");
+            final boolean preferExtensionClassLoader = strategy.preferExtensionClassLoader();
+            final boolean overridden = strategy.overridden();
+            final String[] excludedPackages = strategy.excludedPackages();
+
+            loadDirectory(extensionClasses, directory, nameOfApache, preferExtensionClassLoader, overridden, excludedPackages);
+            loadDirectory(extensionClasses, directory, nameOfAlibaba, preferExtensionClassLoader, overridden, excludedPackages);
         }
 
         return extensionClasses;
