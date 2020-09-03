@@ -85,7 +85,9 @@ public class ExtensionLoader<T> {
 
     private static final Pattern NAME_SEPARATOR = Pattern.compile("\\s*[,]+\\s*");
 
-    /** 所有ExtensionLoader实例的容器，每个扩展点只有一个ExtensionLoader实例 */
+    /**
+     *  所有ExtensionLoader实例的容器，每个扩展点只有一个ExtensionLoader实例
+     */
     private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS = new ConcurrentHashMap<>(64);
 
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<>(64);
@@ -106,16 +108,29 @@ public class ExtensionLoader<T> {
     private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<>();
 
     private final Map<String, Object> cachedActivates = new ConcurrentHashMap<>();
+
     private final ConcurrentMap<String, Holder<Object>> cachedInstances = new ConcurrentHashMap<>();
+
+    /**
+     * adaptive扩展实现类的实例，相当于扩展点的路由器
+     */
     private final Holder<Object> cachedAdaptiveInstance = new Holder<>();
     private volatile Class<?> cachedAdaptiveClass = null;
+
+    /**
+     * 在扩展点接口，用@SPI注解指定的默认扩展点实现类的name，通过该name可以在{@link #cachedClasses}中找到默认扩展实现类
+     */
     private String cachedDefaultName;
+
     private volatile Throwable createAdaptiveInstanceError;
 
     private Set<Class<?>> cachedWrapperClasses;
 
     private Map<String, IllegalStateException> exceptions = new ConcurrentHashMap<>();
 
+    /**
+     * 指定扩展点的加载路径、加载方式。只有LoadingStrategy是通过jdk的ServiceLoader方式加载的。
+     */
     private static volatile LoadingStrategy[] strategies = loadLoadingStrategies();
 
     public static void setLoadingStrategies(LoadingStrategy... strategies) {
@@ -162,7 +177,12 @@ public class ExtensionLoader<T> {
      */
     private ExtensionLoader(Class<?> type) {
         this.type = type;
-        objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());
+        if (type == ExtensionFactory.class) {
+            objectFactory = null;
+        } else {
+            final ExtensionLoader<ExtensionFactory> extensionLoader = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
+            objectFactory = extensionLoader.getAdaptiveExtension();
+        }
     }
 
     private static <T> boolean withExtensionAnnotation(Class<T> type) {
@@ -590,7 +610,7 @@ public class ExtensionLoader<T> {
             cachedAdaptiveInstance.set(null);
         }
     }
-
+    /** 获取具体的adaptive扩展点实例 */
     @SuppressWarnings("unchecked")
     public T getAdaptiveExtension() {
         Object instance = cachedAdaptiveInstance.get();
@@ -791,16 +811,16 @@ public class ExtensionLoader<T> {
     private Map<String, Class<?>> loadExtensionClasses() {
         cacheDefaultExtensionName();
 
-        Map<String, Class<?>> extensionClasses = new HashMap<>();
+        final Map<String, Class<?>> extensionClasses = new HashMap<>();
 
-        for (LoadingStrategy strategy : strategies) {
-            final String directory = strategy.directory();
-            final String nameOfApache = type.getName();
-            final String nameOfAlibaba = nameOfApache.replace("org.apache", "com.alibaba");
-            final boolean preferExtensionClassLoader = strategy.preferExtensionClassLoader();
-            final boolean overridden = strategy.overridden();
-            final String[] excludedPackages = strategy.excludedPackages();
+        final String nameOfApache = type.getName();
+        final String nameOfAlibaba = nameOfApache.replace("org.apache", "com.alibaba");
 
+        for (LoadingStrategy strategy : strategies) { // 下面会根据strategy指定的配置，加载所有{@link @type}指定的扩展点实现类
+            final String directory                      = strategy.directory();
+            final boolean preferExtensionClassLoader    = strategy.preferExtensionClassLoader();
+            final boolean overridden                    = strategy.overridden();
+            final String[] excludedPackages             = strategy.excludedPackages();
             loadDirectory(extensionClasses, directory, nameOfApache, preferExtensionClassLoader, overridden, excludedPackages);
             loadDirectory(extensionClasses, directory, nameOfAlibaba, preferExtensionClassLoader, overridden, excludedPackages);
         }
@@ -851,9 +871,9 @@ public class ExtensionLoader<T> {
 
             if (urls == null || !urls.hasMoreElements()) {
                 if (classLoader != null) {
-                    urls = classLoader.getResources(fileName);
+                    urls = classLoader.getResources(fileName); // 用参数里的classLoader加载资源
                 } else {
-                    urls = ClassLoader.getSystemResources(fileName);
+                    urls = ClassLoader.getSystemResources(fileName); // 用类的静态方法加载资源
                 }
             }
 
@@ -1043,18 +1063,20 @@ public class ExtensionLoader<T> {
     @SuppressWarnings("unchecked")
     private T createAdaptiveExtension() {
         try {
-            return injectExtension((T) getAdaptiveExtensionClass().newInstance());
+            final Class<?> adaptiveExtensionClass = getAdaptiveExtensionClass();
+            final T extensionInstance = (T) adaptiveExtensionClass.newInstance();
+            return injectExtension(extensionInstance);
         } catch (Exception e) {
             throw new IllegalStateException("Can't create adaptive extension " + type + ", cause: " + e.getMessage(), e);
         }
     }
 
     private Class<?> getAdaptiveExtensionClass() {
-        getExtensionClasses();
+        getExtensionClasses(); // 加载所有的扩展点的实现类。若扩展点实现类用了@Adaptive注解，则将其缓存在cachedAdaptiveClass。若使用@Activate注解，则缓存在cachedActivates。除adaptive的扩展点外，其他的扩展点实现都会缓存在cachedClasses（holder）
         if (cachedAdaptiveClass != null) {
-            return cachedAdaptiveClass;
+            return cachedAdaptiveClass; // 有些扩展点的实现类使用了@Adaptive注解，这些实现类就是扩展点的默认"适应性类"；有些扩展点的所有实现类都没有用@Adaptive注解，则这些扩展点需要动态生成"适应性类"
         }
-        return cachedAdaptiveClass = createAdaptiveExtensionClass();
+        return cachedAdaptiveClass = createAdaptiveExtensionClass(); // 有些扩展点的所有实现类都没有用@Adaptive注解，则这些扩展点需要动态生成"适应性类"
     }
 
     private Class<?> createAdaptiveExtensionClass() {
