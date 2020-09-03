@@ -17,7 +17,10 @@
 package org.apache.dubbo.common.extension;
 
 import org.apache.dubbo.common.lang.Prioritized;
-
+/**
+ * <p>这个接口的实现类是用jdk的ServiceLoader加载的，只有这个接口用了这种加载方式。</p>
+ * <p>这个类用于指定dubbo的扩展点的加载策略（配置文件路径、排除特定包、是否使用ExtensionClassLoader的类加载器等）</p>
+ */
 public interface LoadingStrategy extends Prioritized {
 
     String directory();
