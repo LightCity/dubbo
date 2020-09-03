@@ -57,7 +57,7 @@ import java.lang.annotation.Target;
 public @interface SPI {
 
     /**
-     * default extension name
+     * default extension name 默认扩展点名。ExtensionLoader会加载多个扩展点实现类，每个类都会有一个name属性。当使用扩展点时，如果没有指定，则会使用默认扩展点实现类。
      */
     String value() default "";
 
