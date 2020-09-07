@@ -56,7 +56,7 @@ public class Environment extends LifecycleAdapter implements FrameworkExt {
         this.externalConfiguration = new InmemoryConfiguration();
         this.appExternalConfiguration = new InmemoryConfiguration();
     }
-
+    /** 环境初始化，从ConfigManager获取配置，保存在本对象的 externalConfiguration 、appExternalConfiguration 中 */
     @Override
     public void initialize() throws IllegalStateException {
         ConfigManager configManager = ApplicationModel.getConfigManager();

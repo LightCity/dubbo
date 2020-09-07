@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -163,6 +164,7 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
      */
     protected void loadEventListenerInstances() {
         ExtensionLoader<EventListener> loader = ExtensionLoader.getExtensionLoader(EventListener.class);
-        loader.getSupportedExtensionInstances().forEach(this::addEventListener);
+        final Set<EventListener> supportedExtensionInstances = loader.getSupportedExtensionInstances();
+        supportedExtensionInstances.forEach(this::addEventListener);
     }
 }

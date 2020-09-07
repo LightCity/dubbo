@@ -135,7 +135,9 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
     }
 
     public Optional<Collection<ConfigCenterConfig>> getDefaultConfigCenter() {
-        Collection<ConfigCenterConfig> defaults = getDefaultConfigs(getConfigsMap(getTagName(ConfigCenterConfig.class)));
+        final String tagName = getTagName(ConfigCenterConfig.class);
+        final Map<String, ConfigCenterConfig> configsMap = getConfigsMap(tagName);
+        Collection<ConfigCenterConfig> defaults = getDefaultConfigs(configsMap);
         if (CollectionUtils.isEmpty(defaults)) {
             defaults = getConfigCenters();
         }
@@ -309,7 +311,7 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
         serviceConfigs.forEach(this::addService);
     }
 
-    public Collection<ServiceConfigBase> getServices() {
+    public Collection<ServiceConfigBase<?>> getServices() {
         return getConfigs(getTagName(ServiceConfigBase.class));
     }
 
@@ -402,29 +404,35 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
             return;
         }
         write(() -> {
-            Map<String, AbstractConfig> configsMap = configsCache.computeIfAbsent(getTagName(config.getClass()), type -> newMap());
+            final Class<? extends AbstractConfig> configClass = config.getClass();
+            final String tagName = getTagName(configClass);
+            Map<String, AbstractConfig> configsMap = configsCache.computeIfAbsent(tagName, type -> newMap());
             addIfAbsent(config, configsMap, unique);
         });
     }
 
+    @SuppressWarnings("unchecked")
     protected <C extends AbstractConfig> Map<String, C> getConfigsMap(String configType) {
-        return (Map<String, C>) read(() -> configsCache.getOrDefault(configType, emptyMap()));
+        return (Map<String, C>) read(() -> configsCache.getOrDefault(configType, emptyMap())); // 如果configsCache没有，则只是返回一个空集。并且这个空集没有被缓存在其他地方。
     }
 
+    @SuppressWarnings("unchecked")
     protected <C extends AbstractConfig> Collection<C> getConfigs(String configType) {
         return (Collection<C>) read(() -> getConfigsMap(configType).values());
     }
 
+    @SuppressWarnings("unchecked")
     protected <C extends AbstractConfig> C getConfig(String configType, String id) {
         return read(() -> {
-            Map<String, C> configsMap = (Map) configsCache.getOrDefault(configType, emptyMap());
+            Map<String, C> configsMap = (Map<String, C>) configsCache.getOrDefault(configType, emptyMap());
             return configsMap.get(id);
         });
     }
 
+    @SuppressWarnings("unchecked")
     protected <C extends AbstractConfig> C getConfig(String configType) throws IllegalStateException {
         return read(() -> {
-            Map<String, C> configsMap = (Map) configsCache.getOrDefault(configType, emptyMap());
+            Map<String, C> configsMap = (Map<String, C>) configsCache.getOrDefault(configType, emptyMap());
             int size = configsMap.size();
             if (size < 1) {
 //                throw new IllegalStateException("No such " + configType.getName() + " is found");
@@ -438,7 +446,7 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
     }
 
     private <V> V write(Callable<V> callable) {
-        V value = null;
+        V value; // = null;
         Lock writeLock = lock.writeLock();
         try {
             writeLock.lock();
@@ -462,7 +470,7 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
 
     private <V> V read(Callable<V> callable) {
         Lock readLock = lock.readLock();
-        V value = null;
+        V value; // = null;
         try {
             readLock.lock();
             value = callable.call();
@@ -482,7 +490,7 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
     }
 
     private static <K, V> Map<K, V> newMap() {
-        return new HashMap<K, V>();
+        return new HashMap<>();
     }
 
     static <C extends AbstractConfig> void addIfAbsent(C config, Map<String, C> configsMap, boolean unique)
@@ -493,9 +501,9 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
         }
 
         if (unique) { // check duplicate
-            configsMap.values().forEach(c -> {
-                checkDuplicate(c, config);
-            });
+            configsMap.values().forEach(c ->
+                checkDuplicate(c, config)
+            );
         }
 
         String key = getId(config);
