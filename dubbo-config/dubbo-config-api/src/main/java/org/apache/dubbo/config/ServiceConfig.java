@@ -321,9 +321,10 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
 
         for (ProtocolConfig protocolConfig : protocols) {
-            String pathKey = URL.buildKey(getContextPath(protocolConfig)
+            final String contextPath = getContextPath(protocolConfig)
                     .map(p -> p + "/" + path)
-                    .orElse(path), group, version);
+                    .orElse(path);
+            String pathKey = URL.buildKey(contextPath, group, version);
             // In case user specified path, register service one more time to map it to path.
             repository.registerService(pathKey, interfaceClass);
             // TODO, uncomment this line once service key is unified
@@ -491,11 +492,11 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                         if (StringUtils.isNotEmpty(proxy)) {
                             registryURL = registryURL.addParameter(PROXY_KEY, proxy);
                         }
+                        @SuppressWarnings("unchecked")
+                        Invoker<T> invoker = PROXY_FACTORY.getInvoker(ref, (Class<T>) interfaceClass, registryURL.addParameterAndEncoded(EXPORT_KEY, url.toFullString()));
+                        DelegateProviderMetaDataInvoker<T> wrapperInvoker = new DelegateProviderMetaDataInvoker<>(invoker, this);
 
-                        Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(EXPORT_KEY, url.toFullString()));
-                        DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
-
-                        Exporter<?> exporter = PROTOCOL.export(wrapperInvoker);
+                        Exporter<?> exporter = PROTOCOL.<T>export(wrapperInvoker);
                         exporters.add(exporter);
                     }
                 } else {

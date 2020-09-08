@@ -61,9 +61,12 @@ public class ProtocolListenerWrapper implements Protocol {
         if (UrlUtils.isRegistry(invoker.getUrl())) {
             return protocol.export(invoker);
         }
-        return new ListenerExporterWrapper<T>(protocol.export(invoker),
-                Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
-                        .getActivateExtension(invoker.getUrl(), EXPORTER_LISTENER_KEY)));
+        final Exporter<T> exporter = protocol.export(invoker);
+        final List<ExporterListener> exporterListeners = ExtensionLoader
+                .getExtensionLoader(ExporterListener.class)
+                .getActivateExtension(invoker.getUrl(), EXPORTER_LISTENER_KEY);
+        final List<ExporterListener> exporterListenerList = Collections.unmodifiableList(exporterListeners);
+        return new ListenerExporterWrapper<T>(exporter, exporterListenerList);
     }
 
     @Override
